@@ -1,0 +1,22 @@
+{
+  "name": "cursor-sdk-starter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pre-commit code reviewer powered by @cursor/sdk (local runtime).",
+  "scripts": {
+    "review": "tsx src/review-staged.ts",
+    "review:watch": "tsx watch src/review-staged.ts"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.11"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

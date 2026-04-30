@@ -1,0 +1,12 @@
+#!/bin/sh
+# Cursor SDK pre-commit reviewer.
+# Bypass with: git commit --no-verify
+set -e
+
+STARTER="C:/Users/asale/projects/cursor-sdk-starter"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+exec node \
+  "$STARTER/node_modules/tsx/dist/cli.mjs" \
+  "$STARTER/src/review-staged.ts" \
+  "$REPO_ROOT"
