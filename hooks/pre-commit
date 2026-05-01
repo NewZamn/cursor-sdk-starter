@@ -1,12 +1,20 @@
 #!/bin/sh
-# Cursor SDK pre-commit reviewer.
-# Bypass with: git commit --no-verify
+# Cursor SDK pre-commit: New Zamn auth-gate + schema-aware security audit.
+# Bypass once with: git commit --no-verify
 set -e
 
 STARTER="C:/Users/asale/projects/cursor-sdk-starter"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+TSX="$STARTER/node_modules/tsx/dist/cli.mjs"
 
-exec node \
-  "$STARTER/node_modules/tsx/dist/cli.mjs" \
-  "$STARTER/src/review-staged.ts" \
-  "$REPO_ROOT"
+# Re-attach stdin to the terminal so auth-gate can prompt interactively.
+# Git pre-commit hooks default to stdin=/dev/null.
+if [ -t 1 ] || [ -e /dev/tty ]; then
+  exec < /dev/tty 2>/dev/null || true
+fi
+
+# Step 1: 2-way authorisation gate (skips silently when no schema change detected).
+node "$TSX" "$STARTER/scripts/auth-gate.ts" "$REPO_ROOT"
+
+# Step 2: schema-aware security audit (RULE-1 through RULE-6 + soft .cursorrules).
+exec node "$TSX" "$STARTER/scripts/enforce-schema.ts" "$REPO_ROOT"

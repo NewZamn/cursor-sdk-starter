@@ -6,15 +6,18 @@
   "description": "Pre-commit code reviewer powered by @cursor/sdk (local runtime).",
   "scripts": {
     "review": "tsx src/review-staged.ts",
+    "enforce": "tsx scripts/enforce-schema.ts",
+    "auth-gate": "tsx scripts/auth-gate.ts",
     "review:watch": "tsx watch src/review-staged.ts"
   },
   "dependencies": {
-    "@cursor/sdk": "^1.0.11"
+    "@cursor/sdk": "^1.0.11",
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
+    "@types/node": "^22.9.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "@types/node": "^22.9.0"
+    "typescript": "^5.6.3"
   },
   "engines": {
     "node": ">=20.11"
