@@ -22,6 +22,21 @@ const MCP_HOTWORDS: { name: string; re: RegExp }[] = [
   { name: "supabase.rpc('exec_sql', ...)", re: /\.rpc\(\s*['"](?:exec_sql|execute_sql)['"]/i },
 ];
 
+/** Markdown / prose mentions ALTER TABLE in docs — migrations are handled separately. */
+function shouldScanSqlHotwords(file: string): boolean {
+  if (file.startsWith("supabase/migrations/")) return false;
+  const base = file.split("/").pop() ?? file;
+  if (base === ".cursorrules") return false;
+  if (/\.(md|mdx|txt)$/i.test(file)) return false;
+  return /\.(ts|tsx|js|jsx|mjs|cjs|sql)$/i.test(file);
+}
+
+/** Skip JSDoc / line-comment lines so tooling sources don't self-trigger the gate. */
+function isLikelyCommentOnlyLine(line: string): boolean {
+  const t = line.trimStart();
+  return t.startsWith("//") || t.startsWith("*") || t.startsWith("/*") || t.startsWith("*/");
+}
+
 interface Finding {
   reason: string;
   path?: string;
@@ -94,8 +109,9 @@ function detectMajorChanges(cwd: string): Finding[] {
     byFile.get(a.file)!.push(a.line);
   }
 
-  for (const [file, lines] of byFile) {
-    if (file.startsWith("supabase/migrations/")) continue;
+  for (const [file, rawLines] of byFile) {
+    if (!shouldScanSqlHotwords(file)) continue;
+    const lines = rawLines.filter((l) => !isLikelyCommentOnlyLine(l));
     const text = lines.join("\n");
     for (const hw of [...SCHEMA_HOTWORDS, ...MCP_HOTWORDS]) {
       if (hw.re.test(text)) {
