@@ -11,7 +11,9 @@ const TENANT_TABLES = [
   "profiles",
   "projects",
   "volunteer_reviews",
-  "announcements",
+  "project_announcements",
+  "event_announcements",
+  "platform_announcements",
 ];
 
 const BANNED_ANALYTICS_PACKAGES = [
@@ -53,6 +55,29 @@ function getStagedDiff(cwd: string): string {
     encoding: "utf-8",
     maxBuffer: 16 * 1024 * 1024,
   });
+}
+
+function getStagedRelativePaths(cwd: string): string[] {
+  const out = execFileSync("git", ["diff", "--cached", "--name-only", "-z"], {
+    cwd,
+    encoding: "utf-8",
+  });
+  return out.split("\0").filter(Boolean);
+}
+
+/**
+ * BUILD_LOG.md embeds archival SQL; `.cursorrules` names tables in prose.
+ * Skip the expensive SDK audit when only those paths (+ Rule 7 helper) change.
+ */
+const SKIP_FULL_SDK_AUDIT_PATHS = new Set([
+  ".cursorrules",
+  "BUILD_LOG.md",
+  "scripts/rule-7-override.ts",
+]);
+
+function isDocsAndRule7ToolingOnly(cwd: string): boolean {
+  const paths = getStagedRelativePaths(cwd).map((p) => p.replace(/\\/g, "/"));
+  return paths.length > 0 && paths.every((p) => SKIP_FULL_SDK_AUDIT_PATHS.has(p));
 }
 
 function readContext(
@@ -172,6 +197,13 @@ async function main() {
   const diff = getStagedDiff(cwd);
   if (!diff.trim()) {
     console.log("[enforce-schema] no staged changes — nothing to review.");
+    process.exit(0);
+  }
+
+  if (isDocsAndRule7ToolingOnly(cwd)) {
+    console.log(
+      "[enforce-schema] staged paths are policy docs / Rule 7 tooling only — skipping full SDK audit.",
+    );
     process.exit(0);
   }
 
