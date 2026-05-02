@@ -8,9 +8,13 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 TSX="$STARTER/node_modules/tsx/dist/cli.mjs"
 
 # Re-attach stdin to the terminal so auth-gate can prompt interactively.
-# Git pre-commit hooks default to stdin=/dev/null.
-if [ -t 1 ] || [ -e /dev/tty ]; then
-  exec < /dev/tty 2>/dev/null || true
+# Git pre-commit hooks often default to stdin=/dev/null; opening /dev/tty
+# must NOT abort the hook under `set -e` when it isn't available (CI,
+# agent shells, Windows environments without a tty).
+if [ -t 1 ] && [ -r /dev/tty ]; then
+  if ! { exec 0</dev/tty; } 2>/dev/null; then
+    :
+  fi
 fi
 
 # Step 1: 2-way authorisation gate (skips silently when no schema change detected).
